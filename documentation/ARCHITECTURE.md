@@ -28,7 +28,7 @@ The Bidco Retail Analysis Platform is a data-driven application that transforms 
 ### High-Level Architecture
 
 ```
-![Architecture](./documentation/architecture.png)
+![Architecture](architecture.png)
 
 ```
 
