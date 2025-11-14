@@ -26,19 +26,27 @@ The C grade reflects industry-standard retail data quality. All key fields (pric
 
 ### 2. Are We Running Effective Promotions?
 
-**Answer: No promotions detected during analysis period.**
+**Answer: Yes, promotional activity detected across 71 SKUs.**
 
-**Key Finding:** Zero SKUs met the criteria for sustained promotional activity (10%+ discount for 2+ consecutive days).
+**Key Finding:** 67.6% of SKUs show promotional activity when comparing stores running promotions vs stores at regular prices (cross-sectional analysis).
 
-**What We Found:**
+**What was Found:**
 - **Total SKUs Analyzed:** 105 Bidco products
-- **SKUs on Promo:** 0
-- **Average Discount:** 17.0% (but not sustained)
-- **Promo Coverage:** Only 30.5% of stores showed any discounting
+- **SKUs on Promo:** 71 (67.6% of portfolio)
+- **Average Uplift:** 7.56% incremental volume when on promotion
+- **Top Performer:** Chipsy Cooking Fat with 233% uplift
+- **Promo Coverage:** 42.5% average store coverage
 
 **What This Means:**
-Bidco products are selling at or near full retail price (RRP). While some intermittent discounting occurs, there are no sustained promotional campaigns running during this period.
+Promotions are actively running across most of your portfolio and are driving incremental volume. The 7.56% average uplift demonstrates that promotional pricing effectively increases sales in stores that run promotions compared to stores that don't.
 
+**Methodology Note:**
+Due to the cross-sectional nature of the 7-day snapshot data, promotional effectiveness is measured by comparing stores running promotions to stores not running promotions for the same SKUs during the same period. 
+
+**Critical Insights:**
+1. Promotions work - 7.56% average uplift proves effectiveness
+2. Chipsy Cooking Fat is your star performer (233% uplift)
+3. Room to expand - 42.5% coverage means opportunities exist
 **Critical Insight:**
 Despite no active promotions, Bidco still captures 7.84% market share. This suggests:
 1. Strong brand equity (customers buy without needing discounts)
@@ -47,20 +55,20 @@ Despite no active promotions, Bidco still captures 7.84% market share. This sugg
 
 **Recommendations:**
 
-1. **Test Promotional Pricing**
-   - Run controlled test: 15% discount for 5 days on top 10 SKUs
-   - Measure uplift vs baseline
-   - Target: 30-50% volume increase to justify margin sacrifice
+1. **Expand Coverage of Best Performers**
+   - Chipsy Cooking Fat shows 233% uplift - expand to more stores
+   - Currently at 42.5% average coverage - target 70%+
+   - Prioritize products with proven high uplift
 
-2. **Strategic Category Selection**
-   - Start with categories where you're discount-positioned (already lower priced than competitors)
-   - Examples: Cooking Oil (index 0.77), Detergent Powder (index 0.53)
-   - Lower risk since you're already priced competitively
+2. **Optimize Discount Depth**
+   - Current average: 15.3% discount
+   - Test deeper discounts (20-25%) on moderate performers
+   - May unlock higher uplift percentages
 
-3. **Store-Specific Rollout**
-   - Begin in top-performing stores (Rongai Main, Mfangano)
-   - These account for 15% of your volume
-   - Minimize risk while maximizing learnings
+3. **Strategic Promo Calendar**
+   - 67.6% of portfolio on promo is high - consider rotation
+   - Avoid training customers to wait for discounts
+   - Balance promoted vs full-price selling
 
 ---
 

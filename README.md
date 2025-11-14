@@ -243,13 +243,8 @@ black src/
 mypy src/
 ```
 
-## License
+[Executive Summary Document](https://docs.google.com/document/d/1twa5tkQQDHdAeeh2J3g_ykqJJWUrnmhtY3LAmIqllSc/edit?tab=t.0)
 
-MIT License - See LICENSE file
-
-## Contact
-
-For questions about this project, please reach out via the repository issues.
 
 ---
 

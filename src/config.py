@@ -1,9 +1,5 @@
 """Configuration module for Bidco retail analysis.
 Defines Pydantic models for structured configuration management.
-Includes settings for promotion detection, data quality scoring,
-competitive price indexing, and general analysis parameters.
-Each configuration section is encapsulated in its own class,
-with sensible defaults and validation.
 """
 
 from pathlib import Path
@@ -15,12 +11,12 @@ from pydantic import BaseModel, Field
 PROJECT_ROOT = Path.cwd().parent
 DATA_DIR = PROJECT_ROOT / "data"
 RAW_DATA_DIR = DATA_DIR / "raw"
-# PROCESSED_DATA_DIR = DATA_DIR / "processed"
-# EXPORTS_DIR = DATA_DIR / "exports"
 
 
 class PromoConfig(BaseModel):
-    """Configuration for promotion detection logic"""
+    """
+    Configuration for promotion detection logic.
+    """
     
     # Discount threshold: realized price must be this % below RRP
     discount_threshold_pct: float = Field(
@@ -28,24 +24,30 @@ class PromoConfig(BaseModel):
         description="Minimum discount % to be considered a promotion"
     )
     
-    # Minimum days a SKU must be on promo to be counted
-    min_promo_days: int = Field(
-        default=2,
-        description="Minimum consecutive days at discount to qualify as promo"
-    )
-    
-    # Maximum discount(> = data error)
+    # Maximum discount (> = data error)
     max_realistic_discount_pct: float = Field(
         default=70.0,
         description="Discounts beyond this are flagged as suspicious"
     )
     
-    # Minimum baseline days needed to calculate uplift
-    min_baseline_days: int = Field(
-        default=2,
-        description="Need at least this many non-promo days for baseline"
+    # Store requirements for cross-sectional comparison
+    min_promo_stores: int = Field(
+        default=1,
+        description="Minimum stores with promo needed for analysis"
     )
-
+    
+    min_baseline_stores: int = Field(
+        default=1,
+        description="Minimum stores without promo needed for comparison"
+    )
+    
+    # Volume threshold for "top performers"
+    min_units_for_top_performer: int = Field(
+        default=50,
+        description="Minimum promo units to be considered a top performer"
+    )
+    
+  
 
 class DataQualityConfig(BaseModel):
     """Configuration for data quality scoring"""
@@ -212,18 +214,18 @@ def get_config_summary() -> dict:
 
 # if __name__ == "__main__":
 #     """Print configuration for validation"""
-#     import json
     
-    
+#     print("=" * 80)
 #     print("BIDCO RETAIL ANALYSIS - CONFIGURATION")
+#     print("=" * 80)
+#     print()
     
-#     config = get_config_summary()
-    
-#     print("PROMO DETECTION")
+#     print("PROMO DETECTION (CROSS-SECTIONAL APPROACH)")
 #     print(f"  Discount threshold: {PROMO_CONFIG.discount_threshold_pct}%")
-#     print(f"  Min promo days: {PROMO_CONFIG.min_promo_days}")
+#     print(f"  Min promo stores: {PROMO_CONFIG.min_promo_stores}")
+#     print(f"  Min baseline stores: {PROMO_CONFIG.min_baseline_stores}")
 #     print(f"  Max realistic discount: {PROMO_CONFIG.max_realistic_discount_pct}%")
-#     print(f"  Min baseline days: {PROMO_CONFIG.min_baseline_days}")
+#     print(f"  Min units for top performer: {PROMO_CONFIG.min_units_for_top_performer}")
 #     print()
     
 #     print("DATA QUALITY")
@@ -250,5 +252,6 @@ def get_config_summary() -> dict:
 #     print(f"  Required columns: {len(ANALYSIS_CONFIG.required_columns)} fields")
 #     print()
     
+#     print("=" * 80)
 #     print("Configuration valid and loaded")
-#     print()
+#     print("=" * 80)

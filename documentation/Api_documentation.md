@@ -373,6 +373,10 @@ curl http://localhost:8000/api/quality/suppliers/BIDCO
 
 Get promotional performance analysis for a supplier.
 
+**Methodology Note:** Uses cross-sectional comparison, comparing stores running promotions 
+vs stores not running promotions for the same SKUs during the same period. This approach 
+is appropriate for snapshot data and measures promotional effectiveness across locations.
+
 **Path Parameters:**
 
 | Parameter | Type | Required | Default | Description |
@@ -384,12 +388,10 @@ Get promotional performance analysis for a supplier.
 | Field | Type | Description |
 |-------|------|-------------|
 | `supplier` | string | Supplier name |
-| `category` | string | Primary category |
-| `sub_department` | string | Primary sub-department |
-| `portfolio` | object | Portfolio metrics |
-| `performance` | object | Performance metrics |
-| `top_performers` | array | Top performing SKUs |
-| `insights` | array | Business insights |
+| `analysis_date` | string | Date of analysis (NEW) |
+| `methodology` | string | Analysis approach: "cross_sectional"  |
+| `category` | string | Primary category (may be "All Categories") |
+| `sub_department` | string | Primary sub-department (may be "All Sub-Departments") |
 
 **Portfolio Object:**
 
@@ -414,9 +416,10 @@ Get promotional performance analysis for a supplier.
 |-------|------|-------------|
 | `item_code` | integer | SKU code |
 | `description` | string | Product description |
-| `store` | string | Store name |
-| `uplift_pct` | float | Uplift percentage |
+| `uplift_pct` | float | Uplift percentage (cross-sectional) |
+| `promo_units` | float | Units sold in promo stores |
 | `discount_pct` | float | Discount percentage |
+| `coverage_pct` | float | Store coverage percentage |
 
 **Example Request:**
 ```bash
@@ -429,25 +432,41 @@ curl http://localhost:8000/api/promos/BIDCO
   "success": true,
   "data": {
     "supplier": "BIDCO",
-    "category": "FOODS",
-    "sub_department": "DETERGENT POWDER",
+    "analysis_date": "2025-11-14",
+    "methodology": "cross_sectional",
+    "category": "All Categories",
+    "sub_department": "All Sub-Departments",
     "portfolio": {
       "total_skus": 105,
-      "skus_on_promo": 0,
-      "promo_sku_pct": 0.0
+      "skus_on_promo": 71,
+      "promo_sku_pct": 67.6
     },
     "performance": {
-      "avg_uplift_pct": null,
-      "median_uplift_pct": null,
-      "avg_discount_pct": 17.0,
-      "avg_promo_coverage_pct": 30.5
+      "avg_uplift_pct": 7.56,
+      "median_uplift_pct": 5.2,
+      "avg_discount_pct": 15.3,
+      "avg_promo_coverage_pct": 42.5
     },
-    "top_performers": [],
+    "top_performers": [
+      {
+        "item_code": 12345,
+        "description": "Chipsy Cooking Fat 2.5KG",
+        "uplift_pct": 233.0,
+        "promo_units": 150,
+        "discount_pct": 18.5,
+        "coverage_pct": 60.0
+      }
+    ],
     "insights": [
-      "Only 0.0% of SKUs are on promotion. Consider expanding promo coverage."
+      "67.6% of SKUs are on promotion.",
+      "Strong average uplift (7.56%). Promotions effectively drive incremental volume."
     ]
   },
-  "timestamp": "2025-11-13T10:30:00"
+  "metadata": {
+    "endpoint": "/api/promos",
+    "methodology_note": "Cross-sectional comparison: promo stores vs baseline stores"
+  },
+  "timestamp": "2025-11-14T10:30:00"
 }
 ```
 

@@ -218,9 +218,14 @@ Rationale:
 
 ## Promotional Analysis Calculations
 
-### Promo Detection Logic
+The 7-day dataset represents a **snapshot** where each SKU appears once per store, 
+not continuous daily tracking of the same store.
 
-**Core Assumption:** A promotion is a sustained discount period, not a one-off price drop.
+**Implication:**
+We use **cross-sectional comparison** (stores with promos vs stores without) 
+rather than time-series comparison (same store before/during promo).
+
+
 
 #### Promo Detection Rules
 
@@ -233,52 +238,66 @@ PROMO_CONFIG = {
     'min_transactions_for_analysis': 5    # Minimum data points
 }
 ```
+---
 
-**Step-by-Step Detection:**
+## IMPORTANT: Cross-Sectional Promotional Analysis Methodology
 
-**Step 1: Calculate Daily Discount**
-```python
-# For each Store + SKU + Date combination:
-daily_discount_pct = (
-    (median_rrp - avg_realized_price) / median_rrp × 100
-)
+### Background
 
-# Using median RRP handles price changes during period
+**Original Assumption:** The analysis was initially designed for time-series data (tracking same store over time).
+
+**Data Reality:** The 7-day dataset is a cross-sectional snapshot where each SKU appears once per store.
+
+**Solution:** We use cross-sectional comparison instead of time-series comparison.
+
+---
+
+### Cross-Sectional Approach
+
+**Cross-Sectional Logic:**
+- Identify stores WITH promo for SKU X (discount >= 10%)
+- Identify stores WITHOUT promo for SKU X (baseline pricing)
+- Compare performance between the two groups
+
+
+### Example: Bidco Chipsy Cooking Fat
+
+**Data:**
+- Store A: Discounted price, 10 units sold ← **Promo group**
+- Store B: Discounted price, 12 units sold ← **Promo group**
+- Store C: Regular price, 3 units sold ← **Baseline group**
+- Store D: Regular price, 4 units sold ← **Baseline group**
+
+**Calculation:**
 ```
-
-**Step 2: Flag Promo Days**
-```python
-is_promo_day = (daily_discount_pct >= 10.0)
-
-Example:
-Date        Daily Discount    Is Promo Day?
-2025-09-22  5%               No
-2025-09-23  12%              Yes
-2025-09-24  15%              Yes
-2025-09-25  3%               No
-```
-
-**Step 3: Aggregate to SKU Level**
-```python
-promo_days = count(is_promo_day == True)
-baseline_days = count(is_promo_day == False)
-total_days = count(all days with transactions)
-```
-
-**Step 4: Determine Promo Status**
-```python
-if (promo_days >= 2) AND (baseline_days >= 2):
-    status = "on_promo"
-elif baseline_days >= 2:
-    status = "baseline"
-else:
-    status = "insufficient_data"
+Average promo units per store: (10 + 12) / 2 = 11 units
+Average baseline units per store: (3 + 4) / 2 = 3.5 units
+Uplift: ((11 - 3.5) / 3.5) × 100 = 214% increase
 ```
 
 **Why This Logic?**
-- Prevents misclassifying one-off price errors as promos
-- Requires both promo AND baseline periods for valid comparison
-- Ensures statistical validity
+
+### 1. **Data Structure Appropriate**
+- 7-day snapshot = cross-sectional data
+- Not longitudinal panel data
+- Cross-sectional comparison is statistically appropriate
+
+### 2. **Business Question Answered**
+- Original question: "Do promotions work?"
+- Cross-sectional answer: "Yes, stores with promos sell X% more than stores without"
+- This IS a valid measure of promotional effectiveness
+
+### 3. **Methodologically Sound**
+- **Comparison groups:** Promo stores vs non-promo stores
+- **Control for time:** Same 7-day period (controls seasonality)
+- **Apples-to-apples:** Same SKU across stores
+- **Statistical validity:** Minimum store requirements (2+ promo, 2+ baseline)
+
+### 4. **Industry Precedent**
+- Standard A/B testing approach
+- Used in retail for store-level experiments
+- Example: "Test stores" (with promo) vs "Control stores" (without promo)
+
 
 ---
 
@@ -291,30 +310,17 @@ else:
 **Formula:**
 ```python
 promo_uplift_pct = (
-    (avg_daily_promo_units - avg_daily_baseline_units) / 
-    avg_daily_baseline_units × 100
+    (avg_promo_store_units - avg_baseline_store_units) / 
+    avg_baseline_store_units × 100
 )
 
 Where:
-avg_daily_promo_units = total_promo_units / promo_days
-avg_daily_baseline_units = total_baseline_units / baseline_days
+- avg_promo_store_units = total_promo_units / promo_stores
+- avg_baseline_store_units = total_baseline_units / baseline_stores
 
-Example:
-Promo period: 100 units over 2 days = 50 units/day
-Baseline: 60 units over 3 days = 20 units/day
-Uplift = (50 - 20) / 20 × 100 = 150%
+
 ```
-
-**Interpretation:**
-- Positive uplift = Promo drove incremental sales
-- Negative uplift = Promo cannibalized baseline (red flag!)
-- 0% uplift = No effect (ineffective promo)
-
-**Assumptions:**
-- Daily averaging accounts for different period lengths
-- Baseline represents "normal" sales velocity
-- External factors (seasonality, stockouts) are constant
-
+\
 ---
 
 #### B. Promo Coverage %

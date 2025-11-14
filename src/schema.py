@@ -178,11 +178,11 @@ class DataQualityReport(BaseModel):
 
 
 
-# PROMOTION SCHEMAS
+# PROMOTION SCHEMAS F CROSS-SECTIONAL APPROACH
 
 
 class PromoStatus(str, Enum):
-    """Promotion status for a SKU on a given day"""
+    """Promotion status for a SKU"""
     ON_PROMO = "on_promo"
     BASELINE = "baseline"
     INSUFFICIENT_DATA = "insufficient_data"
@@ -190,72 +190,95 @@ class PromoStatus(str, Enum):
 
 
 class PromoDetectionResult(BaseModel):
-    """Promo detection for a single SKU"""
+    """
+    Promo detection for a single SKU.
+    Compares stores WITH promo to stores WITHOUT promo for same SKU.
+    """
     
     item_code: int
     description: str
     supplier: str
-    store_name: str
+    store_name: Optional[str] = Field(
+        None, 
+        description="Specific store (None for aggregated cross-store view)"
+    )
     sub_department: str
     section: str
     
-    # Date range
-    analysis_start_date: date
-    analysis_end_date: date
-    
-    # Promo detection
-    promo_days: int = Field(..., description="Number of days on promotion")
-    baseline_days: int = Field(..., description="Number of baseline (non-promo) days")
+    # Promo detection (cross-sectional)
     promo_status: PromoStatus
+    promo_stores: int = Field(..., description="Number of stores running promo")
+    baseline_stores: int = Field(..., description="Number of stores at baseline price")
+    total_stores: int = Field(..., description="Total stores carrying SKU")
     
-    # Pricing
-    avg_promo_price: Optional[float] = None
-    avg_baseline_price: Optional[float] = None
-    avg_rrp: Optional[float] = None
-    avg_discount_pct: Optional[float] = None
+    # Volume metrics
+    promo_units: Optional[float] = Field(None, description="Total units sold in promo stores")
+    baseline_units: Optional[float] = Field(None, description="Total units sold in baseline stores")
     
-    # Performance
-    promo_units: Optional[float] = None
-    baseline_units: Optional[float] = None
+    # Performance (cross-sectional uplift)
     promo_uplift_pct: Optional[float] = Field(
         None,
-        description="Percentage increase in units during promo"
+        description="Uplift % (promo stores vs baseline stores, not same store over time)"
     )
     
+    # Pricing
+    avg_promo_price: Optional[float] = Field(None, description="Average price in promo stores")
+    avg_baseline_price: Optional[float] = Field(None, description="Average price in baseline stores")
+    avg_discount_pct: Optional[float] = Field(None, description="Average discount depth in promo stores")
+    median_rrp: Optional[float] = Field(None, description="Median RRP")
+    
     # Coverage
-    stores_with_promo: Optional[int] = None
-    total_stores_with_sku: Optional[int] = None
-    promo_coverage_pct: Optional[float] = Field(
-        None,
-        description="Percentage of stores running this promo"
-    )
+    promo_coverage_pct: float = Field(..., description="% of stores running promo for this SKU")
+    
+    # DEPRECATED (time-series fields - kept for backward compatibility)
+    analysis_start_date: Optional[date] = None
+    analysis_end_date: Optional[date] = None
+    promo_days: Optional[int] = Field(None, description="DEPRECATED: Use promo_stores instead")
+    baseline_days: Optional[int] = Field(None, description="DEPRECATED: Use baseline_stores instead")
 
 
 class PromoPerformanceSummary(BaseModel):
-    """Aggregated promo performance across multiple SKUs"""
+    """
+    Aggregated promo performance across multiple SKUs.
+    """
     
     supplier: str
-    category: str
-    sub_department: str
+    analysis_date: date
+    category: Optional[str] = None
+    sub_department: Optional[str] = None
     
-    total_skus_analyzed: int
+    total_skus: int = Field(..., alias="total_skus_analyzed")
     skus_on_promo: int
     promo_sku_pct: float
     
-    # Aggregated metrics
-    avg_uplift_pct: Optional[float] = None
+    # Aggregated metrics (cross-sectional)
+    avg_uplift_pct: Optional[float] = Field(
+        None,
+        description="Average uplift across all promo SKUs (cross-sectional)"
+    )
     median_uplift_pct: Optional[float] = None
     avg_discount_pct: Optional[float] = None
-    avg_promo_coverage_pct: Optional[float] = None
+    avg_promo_coverage_pct: Optional[float] = Field(
+        None,
+        description="Average % of stores running promos"
+    )
     
     # Top performers
-    top_performing_skus: List[PromoDetectionResult] = Field(
+    top_performing_skus: List[Dict[str, Any]] = Field(
         default_factory=list,
-        description="Top SKUs by uplift"
+        description="Top SKUs by uplift (simplified dict format)"
     )
     
     # Insights
     insights: List[str] = Field(default_factory=list)
+    
+    # Methodology flag
+    methodology: str = Field(
+        default="cross_sectional",
+        description="Analysis methodology: 'cross_sectional' or 'time_series'"
+    )
+    
+    model_config = ConfigDict(populate_by_name=True)
 
 
 
@@ -393,14 +416,14 @@ def validate_transaction_record(record: Dict[str, Any]) -> tuple[bool, List[str]
     is_valid = len(issues) == 0
     return is_valid, issues
 
-##---Uncomment to Test---##
+
 # if __name__ == "__main__":
 #     """Test schemas with sample data"""
     
-
-#     print("SCHEMA VALIDATION TESTS")
-
-  
+#     print("=" * 80)
+#     print("SCHEMA VALIDATION TESTS (UPDATED FOR CROSS-SECTIONAL)")
+#     print("=" * 80)
+#     print()
     
 #     # Test raw transaction
 #     raw_data = {
@@ -447,25 +470,53 @@ def validate_transaction_record(record: Dict[str, Any]) -> tuple[bool, List[str]
 #     print(f"   Trusted: {quality_score.is_trusted}")
 #     print()
     
-#     # Test promo result
+#     # Test promo result (CROSS-SECTIONAL)
 #     promo = PromoDetectionResult(
 #         item_code=280236,
-#         description="HC-TOPEX LEMON 250ML",
-#         supplier="SUPERSLEEK LIMITED",
-#         store_name="KIAMBU RD",
-#         sub_department="BLEACH",
-#         section="BLEACH 250ML",
-#         analysis_start_date=date(2025, 9, 22),
-#         analysis_end_date=date(2025, 9, 28),
-#         promo_days=3,
-#         baseline_days=4,
+#         description="Bidco Chipsy Cooking Fat",
+#         supplier="BIDCO AFRICA LIMITED",
+#         store_name=None,  # Aggregated view
+#         sub_department="COOKING FATS",
+#         section="COOKING FAT 2.5KG",
 #         promo_status=PromoStatus.ON_PROMO,
-#         promo_uplift_pct=45.5
+#         promo_stores=2,
+#         baseline_stores=2,
+#         total_stores=4,
+#         promo_units=22.0,
+#         baseline_units=7.0,
+#         promo_uplift_pct=214.3,
+#         avg_promo_price=450.0,
+#         avg_baseline_price=500.0,
+#         avg_discount_pct=15.5,
+#         median_rrp=525.0,
+#         promo_coverage_pct=50.0
 #     )
     
-#     print(f"PromoDetectionResult created: {promo.description}")
+#     print(f" PromoDetectionResult (CROSS-SECTIONAL) created: {promo.description}")
 #     print(f"   Status: {promo.promo_status.value}")
-#     print(f"   Uplift: {promo.promo_uplift_pct}%")
+#     print(f"   Uplift: {promo.promo_uplift_pct}% (promo stores vs baseline stores)")
+#     print(f"   Promo stores: {promo.promo_stores}, Baseline stores: {promo.baseline_stores}")
+#     print(f"   Coverage: {promo.promo_coverage_pct}%")
+#     print()
+    
+#     # Test promo summary
+#     promo_summary = PromoPerformanceSummary(
+#         supplier="BIDCO",
+#         analysis_date=date(2025, 11, 14),
+#         total_skus_analyzed=105,
+#         skus_on_promo=71,
+#         promo_sku_pct=67.6,
+#         avg_uplift_pct=7.56,
+#         median_uplift_pct=5.2,
+#         avg_discount_pct=15.3,
+#         avg_promo_coverage_pct=42.5,
+#         methodology="cross_sectional"
+#     )
+    
+#     print(f" PromoPerformanceSummary created: {promo_summary.supplier}")
+#     print(f"   SKUs on promo: {promo_summary.skus_on_promo}/{promo_summary.total_skus}")
+#     print(f"   Avg uplift: {promo_summary.avg_uplift_pct}%")
+#     print(f"   Methodology: {promo_summary.methodology}")
 #     print()
     
 #     # Test price index
@@ -485,11 +536,11 @@ def validate_transaction_record(record: Dict[str, Any]) -> tuple[bool, List[str]
 #         competitor_transaction_count=45
 #     )
     
-#     print(f"PriceIndexResult created: {price_idx.description}")
+#     print(f" PriceIndexResult created: {price_idx.description}")
 #     print(f"   Position: {price_idx.price_position.value}")
 #     print(f"   Index: {price_idx.price_index}")
 #     print()
     
 #     print("=" * 80)
-#     print("All schema tests passed ")
+#     print("All schema tests passed")
 #     print("=" * 80)

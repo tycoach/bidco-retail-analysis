@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bidco Retail Analytics Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 2rem; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        header { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 2rem; }
+        header h1 { color: #1f2937; margin-bottom: 0.5rem; font-size: 2rem; }
+        header p { color: #6b7280; font-size: 0.875rem; }
+        .tabs { display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap; }
+        .tab-button { background: white; border: none; padding: 1rem 1.5rem; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-weight: 500; color: #6b7280; transition: all 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .tab-button:hover { background: #f3f4f6; transform: translateY(-2px); }
+        .tab-button.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .section { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 2rem; }
+        .section h2 { color: #1f2937; margin-bottom: 1.5rem; font-size: 1.5rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; }
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .metric-card { background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); padding: 1.5rem; border-radius: 8px; text-align: center; }
+        .metric-label { font-size: 0.75rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; font-weight: 600; }
+        .metric-value { font-size: 2rem; font-weight: bold; color: #1f2937; margin-bottom: 0.25rem; }
+        .metric-subtitle { font-size: 0.75rem; color: #9ca3af; }
+        .charts-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; }
+        .chart-container { background: #fafafa; padding: 1.5rem; border-radius: 8px; }
+        .chart-container h3 { margin: 0 0 1rem 0; font-size: 1.125rem; color: #1f2937; }
+        .chart-container-full { background: #fafafa; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; }
+        .insights-box { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 1.5rem; border-radius: 8px; border-left: 4px solid #3b82f6; }
+        .insights-box h3 { margin: 0 0 1rem 0; color: #1e40af; }
+        .insights-box ul { margin: 0; padding-left: 1.5rem; }
+        .insights-box li { margin-bottom: 0.5rem; color: #1f2937; }
+        .loading { text-align: center; padding: 3rem; color: #6b7280; }
+        .error { background: #fee2e2; color: #991b1b; padding: 1rem; border-radius: 8px; border-left: 4px solid #ef4444; }
+        footer { text-align: center; color: white; margin-top: 3rem; font-size: 0.875rem; }
+        @media (max-width: 768px) { .charts-row { grid-template-columns: 1fr; } .metrics-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛒 Bidco Retail Analytics Dashboard</h1>
+            <p>Real-time insights powered by FastAPI • Data Quality • Price Positioning • Performance Metrics</p>
+        </header>
+        <div class="tabs">
+            <button class="tab-button active" data-tab="overview">📊 Overview</button>
+            <button class="tab-button" data-tab="quality">✅ Data Quality</button>
+            <button class="tab-button" data-tab="promotions">🎯 Promotions</button>
+            <button class="tab-button" data-tab="pricing">💰 Pricing</button>
+            <button class="tab-button" data-tab="kpis">📈 KPIs</button>
+        </div>
+
+        <!-- OVERVIEW TAB -->
+        <div id="overview-tab" class="tab-content active">
+            <div class="section">
+                <h2>✅ Data Quality Analysis</h2>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Total Records</div>
+                        <div class="metric-value" id="overview-total-records">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Trusted Stores</div>
+                        <div class="metric-value" id="overview-trusted-stores">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Completeness</div>
+                        <div class="metric-value" id="overview-completeness">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Validity</div>
+                        <div class="metric-value" id="overview-validity">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🎯 Promotional Performance</h2>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">SKUs on Promo</div>
+                        <div class="metric-value" id="overview-promo-skus">-</div>
+                        <div class="metric-subtitle">of <span id="overview-total-skus">-</span> total</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Average Uplift</div>
+                        <div class="metric-value" id="overview-avg-uplift">-</div>
+                        <div class="metric-subtitle">Cross-sectional</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Avg Discount</div>
+                        <div class="metric-value" id="overview-avg-discount">-</div>
+                        <div class="metric-subtitle">vs RRP</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Store Coverage</div>
+                        <div class="metric-value" id="overview-promo-coverage">-</div>
+                        <div class="metric-subtitle">Average</div>
+                    </div>
+                </div>
+                <div class="charts-row">
+                    <div class="chart-container">
+                        <h3>Portfolio Promo Mix</h3>
+                        <div id="overview-promo-portfolio-chart"></div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Top Performers (by Uplift)</h3>
+                        <div id="overview-top-performers-chart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>💰 Price Positioning</h2>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Avg Price Index</div>
+                        <div class="metric-value" id="overview-price-index">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Premium SKUs</div>
+                        <div class="metric-value" id="overview-premium-skus">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Discount SKUs</div>
+                        <div class="metric-value" id="overview-discount-skus">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">At Market SKUs</div>
+                        <div class="metric-value" id="overview-atmarket-skus">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>📈 Key Performance Indicators</h2>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Market Share</div>
+                        <div class="metric-value" id="overview-market-share">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Total Sales</div>
+                        <div class="metric-value" id="overview-total-sales">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Total Units</div>
+                        <div class="metric-value" id="overview-total-units">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Store Coverage</div>
+                        <div class="metric-value" id="overview-store-coverage">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUALITY TAB -->
+        <div id="quality-tab" class="tab-content">
+            <div class="section">
+                <h2>✅ Data Quality Analysis</h2>
+                <div class="loading" id="quality-loading">Loading quality data...</div>
+                <div id="quality-content" style="display:none"></div>
+            </div>
+        </div>
+
+        <!-- PROMOTIONS TAB -->
+        <div id="promotions-tab" class="tab-content">
+            <div class="section">
+                <h2>🎯 Promotional Performance</h2>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">SKUs on Promo</div>
+                        <div class="metric-value" id="promo-skus">-</div>
+                        <div class="metric-subtitle">of <span id="promo-total-skus">-</span> total</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Average Uplift</div>
+                        <div class="metric-value" id="promo-avg-uplift">-</div>
+                        <div class="metric-subtitle">Cross-sectional</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Avg Discount Depth</div>
+                        <div class="metric-value" id="promo-avg-discount">-</div>
+                        <div class="metric-subtitle">vs RRP</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Store Coverage</div>
+                        <div class="metric-value" id="promo-coverage">-</div>
+                        <div class="metric-subtitle">Average</div>
+                    </div>
+                </div>
+                <div class="charts-row">
+                    <div class="chart-container">
+                        <h3>Portfolio Promo Mix</h3>
+                        <div id="promo-portfolio-chart"></div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Top Performing SKUs</h3>
+                        <div id="top-performers-chart"></div>
+                    </div>
+                </div>
+                <div class="chart-container-full">
+                    <h3>Uplift Distribution</h3>
+                    <div id="uplift-distribution-chart"></div>
+                </div>
+                <div class="insights-box">
+                    <h3>🔍 Key Insights</h3>
+                    <ul id="promo-insights"></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- PRICING TAB -->
+        <div id="pricing-tab" class="tab-content">
+            <div class="section">
+                <h2>💰 Price Positioning</h2>
+                <div class="loading" id="pricing-loading">Loading pricing data...</div>
+                <div id="pricing-content" style="display:none"></div>
+            </div>
+        </div>
+
+        <!-- KPIS TAB -->
+        <div id="kpis-tab" class="tab-content">
+            <div class="section">
+                <h2>📈 Key Performance Indicators</h2>
+                <div class="loading" id="kpis-loading">Loading KPI data...</div>
+                <div id="kpis-content" style="display:none"></div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Bidco Retail Analysis Platform v0.1.0</p>
+            <p>Built with FastAPI • Polars • Plotly • Modern Web Technologies</p>
+        </footer>
+    </div>
+
+    <script>
+        // API Base URL — set to your FastAPI host/port
+        const API_BASE = 'http://localhost:8000';
+
+        // Tab switching
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.addEventListener('click', (ev) => {
+                const tabName = btn.getAttribute('data-tab');
+                switchTab(tabName, btn);
+            });
+        });
+
+        function switchTab(tabName, buttonEl) {
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            const buttons = document.querySelectorAll('.tab-button');
+            buttons.forEach(b => b.classList.remove('active'));
+
+            const tabEl = document.getElementById(tabName + '-tab');
+            if (tabEl) tabEl.classList.add('active');
+            if (buttonEl) buttonEl.classList.add('active');
+        }
+
+        // Load all data
+        async function loadDashboardData() {
+            await Promise.allSettled([
+                loadQualityData(),
+                loadPromoData(),
+                loadPricingData(),
+                loadKPIData()
+            ]);
+        }
+
+        // Helper: safe fetch with timeout and error handling
+        async function safeFetch(url, opts = {}) {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), 10000);
+            try {
+                const res = await fetch(url, { signal: controller.signal, ...opts });
+                clearTimeout(id);
+                if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                return await res.json();
+            } catch (err) {
+                clearTimeout(id);
+                console.error('Fetch error', url, err);
+                throw err;
+            }
+        }
+
+        // Load Quality Data
+        async function loadQualityData() {
+            const loading = document.getElementById('quality-loading');
+            const content = document.getElementById('quality-content');
+            try {
+                const data = await safeFetch(`${API_BASE}/api/quality/report`);
+                if (data.success) {
+                    const quality = data.data;
+                    // Update overview tiles
+                    document.getElementById('overview-total-records').textContent = (quality.total_records || 0).toLocaleString();
+                    document.getElementById('overview-trusted-stores').textContent = `${(quality.store_summary && quality.store_summary.trusted) || 0} / ${(quality.total_stores || '-')}`;
+                    document.getElementById('overview-completeness').textContent = quality.overall_metrics ? (quality.overall_metrics.completeness * 100).toFixed(1) + '%' : '-';
+                    document.getElementById('overview-validity').textContent = quality.overall_metrics ? (quality.overall_metrics.validity * 100).toFixed(1) + '%' : '-';
+
+                    // Populate quality tab
+                    content.innerHTML = `
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-label">Completeness</div>
+                                <div class="metric-value">${quality.overall_metrics ? (quality.overall_metrics.completeness * 100).toFixed(1) + '%' : '-'}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Validity</div>
+                                <div class="metric-value">${quality.overall_metrics ? (quality.overall_metrics.validity * 100).toFixed(1) + '%' : '-'}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Consistency</div>
+                                <div class="metric-value">${quality.overall_metrics ? (quality.overall_metrics.consistency * 100).toFixed(1) + '%' : '-'}</div>
+                            </div>
+                        </div>
+                        <div style="margin-top:1rem;">
+                            <h3>Store Summary</h3>
+                            <p>Trusted: ${(quality.store_summary && quality.store_summary.trusted) || 0} &nbsp; | &nbsp; Untrusted: ${(quality.store_summary && quality.store_summary.untrusted) || 0}</p>
+                        </div>
+                    `;
+
+                    loading.style.display = 'none';
+                    content.style.display = 'block';
+                }
+            } catch (err) {
+                loading.style.display = 'none';
+                content.style.display = 'block';
+                content.innerHTML = `<div class="error">Unable to load quality data: ${err.message || err}</div>`;
+            }
+        }
+
+        // Load Promotional Data
+        async function loadPromoData() {
+            try {
+                const data = await safeFetch(`${API_BASE}/api/promos/BIDCO`);
+                if (data.success) {
+                    displayPromoMetrics(data.data);
+                    createPromoCharts(data.data);
+                }
+            } catch (error) {
+                console.error('Error loading promo data:', error);
+                const promoTab = document.getElementById('promotions-tab');
+                promoTab.querySelector('.section').insertAdjacentHTML('beforeend', `<div class="error">Failed to load promotions: ${error.message}</div>`);
+            }
+        }
+
+        function displayPromoMetrics(promoData) {
+            const portfolio = promoData.portfolio || {};
+            const performance = promoData.performance || {};
+            document.getElementById('overview-promo-skus').textContent = portfolio.skus_on_promo || 0;
+            document.getElementById('overview-total-skus').textContent = portfolio.total_skus || 0;
+            document.getElementById('overview-avg-uplift').textContent = performance.avg_uplift_pct ? performance.avg_uplift_pct.toFixed(1) + '%' : 'N/A';
+            document.getElementById('overview-avg-discount').textContent = performance.avg_discount_pct ? performance.avg_discount_pct.toFixed(1) + '%' : 'N/A';
+            document.getElementById('overview-promo-coverage').textContent = performance.avg_promo_coverage_pct ? performance.avg_promo_coverage_pct.toFixed(1) + '%' : 'N/A';
+
+            document.getElementById('promo-skus').textContent = portfolio.skus_on_promo || 0;
+            document.getElementById('promo-total-skus').textContent = portfolio.total_skus || 0;
+            document.getElementById('promo-avg-uplift').textContent = performance.avg_uplift_pct ? performance.avg_uplift_pct.toFixed(1) + '%' : 'N/A';
+            document.getElementById('promo-avg-discount').textContent = performance.avg_discount_pct ? performance.avg_discount_pct.toFixed(1) + '%' : 'N/A';
+            document.getElementById('promo-coverage').textContent = performance.avg_promo_coverage_pct ? performance.avg_promo_coverage_pct.toFixed(1) + '%' : 'N/A';
+
+            const insightsList = document.getElementById('promo-insights');
+            insightsList.innerHTML = '';
+            (promoData.insights || []).forEach(insight => {
+                const li = document.createElement('li'); li.textContent = insight; insightsList.appendChild(li);
+            });
+        }
+
+        function createPromoCharts(promoData) {
+            try {
+                createPromoPortfolioChart(promoData.portfolio, 'overview-promo-portfolio-chart');
+                createPromoPortfolioChart(promoData.portfolio, 'promo-portfolio-chart');
+                createTopPerformersChart(promoData.top_performers, 'overview-top-performers-chart');
+                createTopPerformersChart(promoData.top_performers, 'top-performers-chart');
+                if (promoData.top_performers && promoData.top_performers.length > 0) createUpliftDistributionChart(promoData.top_performers);
+            } catch (err) { console.error('Chart error', err); }
+        }
+
+        function createPromoPortfolioChart(portfolio, elementId) {
+            const skusOn = (portfolio && portfolio.skus_on_promo) || 0;
+            const total = (portfolio && portfolio.total_skus) || skusOn;
+            const data = [{ values: [skusOn, Math.max(total - skusOn, 0)], labels: ['On Promo', 'Not on Promo'], type: 'pie', hole: 0.4, textinfo: 'label+percent' }];
+            const layout = { height: 300, showlegend: true, legend: { orientation: 'h', y: -0.1 } };
+            Plotly.newPlot(elementId, data, layout, {responsive: true});
+        }
+
+        function createTopPerformersChart(topPerformers, elementId) {
+            if (!topPerformers || topPerformers.length === 0) { document.getElementById(elementId).innerHTML = '<p style="text-align:center;color:#94a3b8">No promotional data available</p>'; return; }
+            const top10 = topPerformers.slice(0,10);
+            const data = [{ x: top10.map(p=>p.uplift_pct), y: top10.map(p=>p.description ? p.description.substring(0,30) : 'SKU'), type: 'bar', orientation: 'h', text: top10.map(p=>p.uplift_pct!=null? p.uplift_pct.toFixed(1)+'%':'N/A'), marker: { showscale: false } }];
+            const layout = { height: 400, margin: { l: 150, r: 50, t: 20, b: 40 }, xaxis: { title: 'Uplift %' }, yaxis: { autorange: 'reversed' } };
+            Plotly.newPlot(elementId, data, layout, {responsive: true});
+        }
+
+        function createUpliftDistributionChart(performers) {
+            const uplifts = performers.map(p => p.uplift_pct).filter(u => u != null);
+            const data = [{ x: uplifts, type: 'histogram', nbinsx: 20 }];
+            const layout = { height: 300, xaxis: { title: 'Uplift %' }, yaxis: { title: 'Number of SKUs' } };
+            Plotly.newPlot('uplift-distribution-chart', data, layout, {responsive: true});
+        }
+
+        // Load Pricing Data
+        async function loadPricingData() {
+            const loading = document.getElementById('pricing-loading');
+            const content = document.getElementById('pricing-content');
+            try {
+                const data = await safeFetch(`${API_BASE}/api/pricing/BIDCO`);
+                if (data.success) {
+                    const pricing = data.data;
+                    const portfolio = pricing.portfolio || {};
+                    const indices = pricing.price_indices || {};
+
+                    // Update overview
+                    document.getElementById('overview-price-index').textContent = indices.average ? indices.average.toFixed(3) : '-';
+                    document.getElementById('overview-premium-skus').textContent = portfolio.premium_skus || 0;
+                    document.getElementById('overview-discount-skus').textContent = portfolio.discount_skus || 0;
+                    document.getElementById('overview-atmarket-skus').textContent = portfolio.at_market_skus || 0;
+
+                    // Populate pricing tab
+                    content.innerHTML = `
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-label">Avg Price Index</div>
+                                <div class="metric-value">${indices.average ? indices.average.toFixed(3) : '-'}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Median Price Index</div>
+                                <div class="metric-value">${indices.median ? indices.median.toFixed(3) : '-'}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Premium SKUs</div>
+                                <div class="metric-value">${portfolio.premium_skus || 0}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Discount SKUs</div>
+                                <div class="metric-value">${portfolio.discount_skus || 0}</div>
+                            </div>
+                        </div>
+                    `;
+
+                    loading.style.display = 'none';
+                    content.style.display = 'block';
+                }
+            } catch (err) {
+                loading.style.display = 'none';
+                content.style.display = 'block';
+                content.innerHTML = `<div class="error">Unable to load pricing data: ${err.message || err}</div>`;
+            }
+        }
+
+        // Load KPI Data
+        async function loadKPIData() {
+            const loading = document.getElementById('kpis-loading');
+            const content = document.getElementById('kpis-content');
+            try {
+                const data = await safeFetch(`${API_BASE}/api/kpis/BIDCO`);
+                if (data.success) {
+                    const kpis = data.data;
+                    // Update overview
+                    document.getElementById('overview-market-share').textContent = kpis.market_share_pct ? kpis.market_share_pct.toFixed(2) + '%' : '-';
+                    document.getElementById('overview-total-sales').textContent = kpis.total_sales ? 'KES ' + (kpis.total_sales / 1000).toFixed(0) + 'K' : '-';
+                    document.getElementById('overview-total-units').textContent = kpis.total_units ? kpis.total_units.toLocaleString() : '-';
+                    document.getElementById('overview-store-coverage').textContent = (kpis.stores_present || 0) + ' / 35';
+
+                    // Populate KPI tab
+                    content.innerHTML = `
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-label">Market Share</div>
+                                <div class="metric-value">${kpis.market_share_pct ? kpis.market_share_pct.toFixed(2) + '%' : '-'}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Total Sales</div>
+                                <div class="metric-value">${kpis.total_sales ? 'KES ' + (kpis.total_sales/1000).toFixed(0) + 'K' : '-'}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Total Units</div>
+                                <div class="metric-value">${kpis.total_units ? kpis.total_units.toLocaleString() : '-'}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Stores Present</div>
+                                <div class="metric-value">${kpis.stores_present || 0}</div>
+                            </div>
+                        </div>
+                    `;
+
+                    loading.style.display = 'none';
+                    content.style.display = 'block';
+                }
+            } catch (err) {
+                loading.style.display = 'none';
+                content.style.display = 'block';
+                content.innerHTML = `<div class="error">Unable to load KPI data: ${err.message || err}</div>`;
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDashboardData();
+        });
+    </script>
+</body>
+</html>

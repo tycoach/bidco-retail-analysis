@@ -50,7 +50,7 @@ async def get_dashboard(supplier_name: str = "BIDCO", df: pl.DataFrame = Depends
                 },
                 "promos": {
                     "skus_on_promo": promo_summary.skus_on_promo,
-                    "total_skus": promo_summary.total_skus_analyzed,
+                    "total_skus": promo_summary.total_skus,
                     "avg_uplift_pct": promo_summary.avg_uplift_pct
                 },
                 "pricing": {
