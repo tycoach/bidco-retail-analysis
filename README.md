@@ -100,7 +100,7 @@ Dashboard → Visual Insights
 
 ### High-Level Architecture
 
-```
+
 ![Architecture](./documentation/architecture.png)
 
 ```
